@@ -31,6 +31,21 @@ interface Grape<Input, Output> {
 }
 ```
 
+### API Reference
+
+#### The `Result` Type
+We strictly avoid throwing Errors for control flow. All Grapes must return a `Result`.
+
+```typescript
+type Result<T, E = Error> =
+  | { success: true; data: T }       // Operation succeeded
+  | { success: false; error: E };    // Operation failed explicitly
+```
+
+#### Error Propagation
+- **Fatal**: If a Grape returns `success: false`, the **Pipeline halts immediately**.
+- **Recoverable**: If you need to recover, you must handle the logic *outside* the pipeline or use a specific "RetryGrape" (planned) that wraps another Grape.
+
 ### 2. Pipeline
 A linear chain of Grapes. Data flows through sequentially. If any Grape fails, the pipeline halts (or falls back, depending on configuration).
 
@@ -105,21 +120,50 @@ const processedImage = await imagePipeline.run(uploadedBuffer);
 
 ## Design Philosophy
 
-1.  **Deterministic First**: We prefer regex, schema validation, and code-based logic over "asking an LLM to fix it."
-2.  **Model Agnostic**: Works with OpenAI, Anthropic, local models, or standard REST APIs.
-3.  **Explicit Failure**: We prefer crashing the pipeline over guessing the user's intent. Silent failures are the enemy.
-4.  **Removable**: Every Grape is isolated. If a validation rule changes, swap the Grape.
+### 1. Deterministic First, AI Second
+We trust code more than probabilities.
+- **Why?** LLMs are non-deterministic. If you ask an LLM to "fix this JSON," it might fix it 99 times and hallucinate a new key the 100th time.
+- **Approach**: Always use regex, strict schema validation (Zod), or algorithmic repair *first*. Only use checking models as a last resort "Heal Grape."
+
+### 2. Explicit Failures > Silent Guesses
+A pipeline should crash loudly rather than pass bad data.
+- **Failures Propagate**: A failure in the first Grape stops the entire chain immediately.
+- **Signal**: We return a `{ success: false, error: Error }` Result type. We never `throw` exceptions for expected validation failures; we return them as values.
+
+### 3. Isolated & Chainable
+Big logic is bad logic.
+- **Small Grapes**: A Grape should do *one* thing (e.g., "Check Aspect Ratio").
+- **Composable**: If a rule changes, you remove one Grape, not rewrite a monolithic function.
 
 ## Limitations
 
 - **No Semantic Truth**: `grapes-ai` cannot tell you if a generated summary is *accurate*, only that it is *grammatically correct* or *fits a length constraint*.
 - **Linear Complexity**: Pipelines are designed for linear transformations. Complex branching logic logic should be handled in your application code, not creating "spaghetti grapes."
+- **Misuse of Fallbacks**:
+  - **Anti-Pattern**: Using an LLM to "fix" a date format that could be fixed with `Date.parse()`.
+  - **Rule**: Never call an LLM if you can fix it with deterministic logic. Use "Healer Grapes" only when schema validation fails explicitly and no algorithmic fix is possible.
+
+## Contributing
+
+We welcome pull requests that align with our deterministic philosophy.
+
+### Standards for New Grapes
+1.  **Single Responsibility**: A Grape must do exactly one thing.
+2.  **No Side Effects**: Grapes should be pure functions of their input where possible (or idempotent).
+3.  **No `any`**: We enforce `noImplicitAny` and `noUncheckedIndexedAccess`. Use `unknown` or generics.
+
+### Testing & Linting
+- **Test every Grape**: Create a matching `.test.ts` file in `tests/`.
+- **Coverage**: run `npm test` to ensure no regressions.
+- **Lint**: Code must pass `tsc` with strict settings enabled.
 
 ## Roadmap
 
-- **Q1**: Core TypeScript interfaces and basic Validator Grapes (JSON, Regex).
-- **Q2**: Image processing Grapes (using `sharp` or similar).
-- **Q3**: "Heal" Grapes (optional LLM call to fix broken JSON).
+- ✅ **Core Engine**: TypeScript interfaces, Pipeline logic, and explicit Result types.
+- ✅ **Text Grapes**: JSON parsing, Zod schema validation.
+- ✅ **API Grapes**: Key renaming, Type casting, Default values.
+- ⚡ **Image Processing**: (Planned) `sharp` integration for resizing, aspect ratio, and format conversion.
+- 🧠 **Healer Grapes**: (Planned) Optional LLM-based repair for broken JSON. *Philosophy: Must be less trusted than deterministic steps and only run on explicit failure.*
 
 ---
 *Maintained by the Open Source Engineering Community.*
