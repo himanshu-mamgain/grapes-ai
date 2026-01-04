@@ -42,6 +42,8 @@ type Result<T, E = Error> =
   | { success: false; error: E };    // Operation failed explicitly
 ```
 
+This discriminative union forces you to handle both cases. accessing `.data` is only allowed if `success` is true.
+
 #### Error Propagation
 - **Fatal**: If a Grape returns `success: false`, the **Pipeline halts immediately**.
 - **Recoverable**: If you need to recover, you must handle the logic *outside* the pipeline or use a specific "RetryGrape" (planned) that wraps another Grape.
@@ -150,12 +152,27 @@ We welcome pull requests that align with our deterministic philosophy.
 ### Standards for New Grapes
 1.  **Single Responsibility**: A Grape must do exactly one thing.
 2.  **No Side Effects**: Grapes should be pure functions of their input where possible (or idempotent).
-3.  **No `any`**: We enforce `noImplicitAny` and `noUncheckedIndexedAccess`. Use `unknown` or generics.
+3.  **Strict Typing**: We enforce `noImplicitAny`.
+    - ❌ `process(input: any)`
+    - ✅ `process(input: unknown)` or `process(input: string)`
+4.  **Testing**:
+    - Must include `.test.ts`.
+    - Must test **success** (happy path) AND **failure** (edge cases).
 
 ### Testing & Linting
 - **Test every Grape**: Create a matching `.test.ts` file in `tests/`.
 - **Coverage**: run `npm test` to ensure no regressions.
 - **Lint**: Code must pass `tsc` with strict settings enabled.
+
+## Available Grapes
+
+| Module | Grape | Input | Output | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Text** | `JsonParserGrape` | `string` | `unknown` | Safely parses JSON string |
+| **Text** | `SchemaValidatorGrape` | `unknown` | `T` | Validates against Zod schema |
+| **API** | `RenameKeyGrape` | `Record` | `Record` | Renames object keys |
+| **API** | `TypeCastGrape` | `Record` | `Record` | Casts values to primitives |
+| **Image**| `AspectRatioGrape` | `ImageMetadata` | `ImageMetadata` | Validation only |
 
 ## Roadmap
 
