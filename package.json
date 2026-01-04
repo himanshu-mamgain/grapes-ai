@@ -1,0 +1,36 @@
+{
+  "name": "grapes-ai",
+  "version": "1.0.0",
+  "description": "**A post-processing and transformation plugin framework for AI outputs and API responses.**",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/himanshu-mamgain/grapes-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/himanshu-mamgain/grapes-ai/issues"
+  },
+  "homepage": "https://github.com/himanshu-mamgain/grapes-ai#readme",
+  "dependencies": {
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.3",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  }
+}
